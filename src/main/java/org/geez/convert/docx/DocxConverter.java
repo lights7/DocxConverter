@@ -133,7 +133,7 @@ public final class DocxConverter extends Application {
     private void openFile(File inputFile) {
         try {
         	String inputFilePath = inputFile.getPath();
-        	String outputFilePath = inputFilePath.replaceAll("\\.docx", "-Abyssinica.docx");
+        	String outputFilePath = inputFilePath.replaceAll("\\.docx", "-uni.docx");
     		File outputFile = new File ( outputFilePath );
 
 

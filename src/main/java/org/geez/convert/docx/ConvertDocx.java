@@ -10,6 +10,7 @@ package org.geez.convert.docx;
  */
 
 import org.docx4j.TraversalUtil;
+
 import org.docx4j.XmlUtils;
 import org.docx4j.finders.ClassFinder;
 import org.docx4j.openpackaging.exceptions.Docx4JException;
@@ -24,19 +25,382 @@ import org.docx4j.wml.RPr;
 import org.docx4j.wml.RFonts;
 import org.docx4j.wml.Text;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
+//import java.io.BufferedReader;
+//import java.io.File;
+//import java.io.IOException;
+//import java.io.InputStream;
+//import java.io.InputStreamReader;
 import java.util.List;
-
-
+import java.util.Arrays;
+import java.util.Scanner; 
+import java.io.*;
+import java.nio.file.*;
+import java.nio.ByteBuffer;
 import com.ibm.icu.text.*;
-
+import java.math.*;
+import org.apache.commons.lang3.StringEscapeUtils;
+import java.lang.*;
 
 public class ConvertDocx {
 	protected Transliterator t = null;
+
+	int Encodings = 17; //How many Encodings are there!!!!!  //2007  20080924
+
+//	long [][] Table = new long [Encodings][];
+	String [][] Table = new String [Encodings][];
+
+	int tableSize[]= {0,30000,40000,135000,176000,1000,1000,40000,50000,90000,1000,40000,170000,680000,48000,40000};
+	
+	long[] start = new long[Encodings];
+	long[] end = new long[Encodings];
+	
+
+	String  EncodingNames[] = {
+		    "Unicode",      //ID--0
+		    "TMW",          //ID--1
+		    "TM",           //ID--2
+		    "Fz",           //ID--3
+		    "Hg",           //ID--4
+		    "ACIP",         //ID--5
+		    "Wylie",        //ID--6
+		    "LTibetan",     //ID--7
+		    "OldSambhota",  //ID--8
+		    "NewSambhota",  //ID--9
+		    "THDLWylie",    //ID--10
+		    "LCWylie",      //ID--11
+		    "TCRCBodYig",   //ID--12
+		    "Bzd",          //ID--13 //2007
+		    "Ty",           //ID--14
+		    "NS",           //ID--15
+		    "Jamyang"       //ID--16 //20080924
+	};
+	
+	String EncodingFile[] = {
+		    "none",      //ID--0
+		    "TMW2Uni.tbl",          //ID--1
+		    "TM2Uni.tbl",           //ID--2
+		    "Fz2Uni.tbl",           //ID--3
+		    "Hg2Uni.tbl",           //ID--4
+		    "ACIP2Uni.tbl",         //ID--5
+		    "Wylie2Uni.tbl",        //ID--6
+		    "LTibetan2Uni.tbl",     //ID--7
+		    "OldSambhota2Uni.tbl",  //ID--8
+		    "NewSambhota2Uni.tbl",  //ID--9
+		    "THDLWylie2Uni.tbl",    //ID--10
+		    "LCWylie2Uni.tbl",      //ID--11
+		    "TCRCBodYig2Uni.tbl",   //ID--12
+		    "Bzd2Uni.tbl",          //ID--13 //2007
+		    "Ty2Uni.tbl",           //ID--14
+		    "NS2Uni.tbl",           //ID--15
+		    "Jamyang2Uni.tbl"       //ID--16 //20080924
+	};
+
+
+	String[][] TibetanFontNames = {
+		    //Unicode font
+			{ "Microsoft Himalaya",
+		    "SambhotaUnicode", //20181201
+		    "CTRC-Uchen",  //20090325
+		    "CTRC-Betsu",  //20090325
+		    "CTRC-Drutsa",  //20090325
+		    "CTRC-Tsumachu",  //20090325
+		    "²ØÑÐÎÚ¼áÌå",  //20090325
+		    "²ØÑÐ´ØÂêÇðÌå",  //20090325
+		    "²ØÑÐ°Ø´ØÌå",  //20090325
+		    "²ØÑÐÖé²ÁÌå",  //20090325
+		    "²ØÑÐÎÚ½ðÌå"},  //20090325
+		    //TMW font
+			{"TibetanMachineWeb",
+		    "TibetanMachineWeb1",
+		    "TibetanMachineWeb2",
+		    "TibetanMachineWeb3",
+		    "TibetanMachineWeb4",
+		    "TibetanMachineWeb5",
+		    "TibetanMachineWeb6",
+		    "TibetanMachineWeb7",
+		    "TibetanMachineWeb8",
+		    "TibetanMachineWeb9"},
+		    //TM font
+			{"TibetanMachine",
+		    "TibetanMachineSkt1",
+		    "TibetanMachineSkt2",
+		    "TibetanMachineSkt3",
+		    "TibetanMachineSkt4"},
+			{},		    //Fz
+		    {},//Hg
+
+		    //ACIP
+		    {"Arial",
+		    "Times New Roman"},
+		    //Wylie
+		    {"Arial",
+		    "Times New Roman"},
+		    //LTibetan
+		    {"LTibetan",
+		    "LMantra"},
+		    //OldSambhota
+		    {"Sama",
+		    "Samb",
+		    "Samc",
+		    "Esama",
+		    "Esamb",
+		    "Esamc"},
+		    //NewSambhota
+		    {"Dedris-a",
+		    "Dedris-a1",
+		    "Dedris-a2",
+		    "Dedris-a3",
+		    "Dedris-b",
+		    "Dedris-b1",
+		    "Dedris-b2",
+		    "Dedris-b3",
+		    "Dedris-c",
+		    "Dedris-c1",
+		    "Dedris-c2",
+		    "Dedris-c3",
+		    "Dedris-d",
+		    "Dedris-d1",
+		    "Dedris-d2",
+		    "Dedris-d3",
+		    "Dedris-e",
+		    "Dedris-e1",
+		    "Dedris-e2",
+		    "Dedris-e3",
+		    "Dedris-f",
+		    "Dedris-f1",
+		    "Dedris-f2",
+		    "Dedris-f3",
+		    "Dedris-g",
+		    "Dedris-g1",
+		    "Dedris-g2",
+		    "Dedris-g3",
+		    "Dedris-syma",
+		    "Dedris-vowa",
+		    "Ededris-a",
+		    "Ededris-a1",
+		    "Ededris-a2",
+		    "Ededris-a3",
+		    "Ededris-b",
+		    "Ededris-b1",
+		    "Ededris-b2",
+		    "Ededris-b3",
+		    "Ededris-c",
+		    "Ededris-c1",
+		    "Ededris-c2",
+		    "Ededris-c3",
+		    "Ededris-d",
+		    "Ededris-d1",
+		    "Ededris-d2",
+		    "Ededris-d3",
+		    "Ededris-e",
+		    "Ededris-e1",
+		    "Ededris-e2",
+		    "Ededris-e3",
+		    "Ededris-f",
+		    "Ededris-f1",
+		    "Ededris-f2",
+		    "Ededris-f3",
+		    "Ededris-g",
+		    "Ededris-g1",
+		    "Ededris-g2",
+		    "Ededris-g3",
+		    "Ededris-syma",
+		    "Ededris-vowa"},
+		    //THDLWylie
+		    {"Arial",
+		    "Times New Roman"},
+		    //LCWylie
+		    {"Arial",
+		    "Times New Roman"},
+		    //TCRCBodYig
+		    {"TCRC Bod-Yig",
+		    "TCRC Youtso",
+		    "TCRC Youtsoweb"},
+		    //Bzd
+		    {"BZDBT", //2007
+		    "BZDHT",
+		    "BZDMT"},
+		    //Ty
+		    {"TIBETBT",
+		    "TIBETHT",
+		    "CHINATIBET"},//20090325
+		    //NS
+		    {"²ØÎÄÎá¼áÇíÌå"},
+		    //Jamyang   20080924
+		    {"DBu-can",
+		    "Tibetisch dBu-can",
+		    "Tibetisch dBu-can Overstrike"}
+		};//TO BE EXTENDED
+	String[][] AllTibetanFontNames = {
+		    //Unicode font
+			{"Microsoft Himalaya", //2007
+		    "SambhotaUnicode", //20181201
+		    "CTRC-Uchen",  //20090325
+		    "CTRC-Betsu",  //20090325
+		    "CTRC-Drutsa",  //20090325
+		    "CTRC-Tsumachu",  //20090325
+		    "²ØÑÐÎÚ¼áÌå",  //20090325
+		    "²ØÑÐ´ØÂêÇðÌå",  //20090325
+		    "²ØÑÐ°Ø´ØÌå",  //20090325
+		    "²ØÑÐÖé²ÁÌå",  //20090325
+		    "²ØÑÐÎÚ½ðÌå"},  //20090325
+		    //TMW font
+			{"TibetanMachineWeb",
+		    "TibetanMachineWeb1",
+		    "TibetanMachineWeb2",
+		    "TibetanMachineWeb3",
+		    "TibetanMachineWeb4",
+		    "TibetanMachineWeb5",
+		    "TibetanMachineWeb6",
+		    "TibetanMachineWeb7",
+		    "TibetanMachineWeb8",
+		    "TibetanMachineWeb9"},
+		    //TM font
+			{"TibetanMachine",
+		    "TibetanMachineSkt1",
+		    "TibetanMachineSkt2",
+		    "TibetanMachineSkt3",
+		    "TibetanMachineSkt4"},
+			{},//Fz
+			{},//Hg
+			{},//Chinese
+			{},//"ËÎÌå", //20080229  //20090325
+			//LTibetan
+			{"LTibetan",
+		    "LMantra"},
+		    //OldSambhota
+			{"Sama",
+		    "Samb",
+		    "Samc",
+		    "Esama",
+		    "Esamb",
+		    "Esamc"},
+		    //NewSambhota
+			{"Dedris-a",
+		    "Dedris-a1",
+		    "Dedris-a2",
+		    "Dedris-a3",
+		    "Dedris-b",
+		    "Dedris-b1",
+		    "Dedris-b2",
+		    "Dedris-b3",
+		    "Dedris-c",
+		    "Dedris-c1",
+		    "Dedris-c2",
+		    "Dedris-c3",
+		    "Dedris-d",
+		    "Dedris-d1",
+		    "Dedris-d2",
+		    "Dedris-d3",
+		    "Dedris-e",
+		    "Dedris-e1",
+		    "Dedris-e2",
+		    "Dedris-e3",
+		    "Dedris-f",
+		    "Dedris-f1",
+		    "Dedris-f2",
+		    "Dedris-f3",
+		    "Dedris-g",
+		    "Dedris-g1",
+		    "Dedris-g2",
+		    "Dedris-g3",
+		    "Dedris-syma",
+		    "Dedris-vowa",
+		    
+		    "Ededris-a",
+		    "Ededris-a1",
+		    "Ededris-a2",
+		    "Ededris-a3",
+		    "Ededris-b",
+		    "Ededris-b1",
+		    "Ededris-b2",
+		    "Ededris-b3",
+		    "Ededris-c",
+		    "Ededris-c1",
+		    "Ededris-c2",
+		    "Ededris-c3",
+		    "Ededris-d",
+		    "Ededris-d1",
+		    "Ededris-d2",
+		    "Ededris-d3",
+		    "Ededris-e",
+		    "Ededris-e1",
+		    "Ededris-e2",
+		    "Ededris-e3",
+		    "Ededris-f",
+		    "Ededris-f1",
+		    "Ededris-f2",
+		    "Ededris-f3",
+		    "Ededris-g",
+		    "Ededris-g1",
+		    "Ededris-g2",
+		    "Ededris-g3",
+		    "Ededris-syma",
+		    "Ededris-vowa"},    
+
+			{"TCRC Bod-Yig",
+		    "TCRC Youtso",
+		    "TCRC Youtsoweb"},
+		    //Bzd
+			{"BZDBT", //2007
+		    "BZDHT",
+		    "BZDMT"},
+		    //Ty
+			{"TIBETBT",
+		    "TIBETHT",
+		    "CHINATIBET"},//20090325
+		    //NS
+			{"²ØÎÄÎá¼áÇíÌå"},
+		    //Jamyang   20080924
+			{"DBu-can"},
+			{"Tibetisch dBu-can",
+		    "Tibetisch dBu-can Overstrike"}
+		};//TO BE EXTENDED
+	int TotalTibetanFontNumber = 107; // = 95 - 8 + 1; //# of all Tibetan fonts over all encodings  //2007           20080924 //20090325 //was 106 before 20181201
+    //TO BE DETERMINED
+//--------------------------------------------------------------------------
+//Tibetan encodings. Index is the ID of the encoding
+
+	//int BaseIndex[]={0, 10, 20, 0, 0, 25, 27, 29, 31, 37, 97, 99, 101, 104, 107, 110, 111};//Actual index of each  encoding in the array "TibetanFontNames"  //2007  20080924 //20090325
+	int[] BaseIndex={0, 11, 21, 0, 0, 26, 28, 30, 32, 38, 98, 100, 102, 105, 108, 111, 112};//Actual index of each   encoding in the array "TibetanFontNames"  //2007  20080924 //20090325 //add SambhotaUnicode on 20181201
+
+
+	//int EncodingFontNumber[] = {10, 10, 5, 0, 0, 2, 2, 2, 6, 60, 2, 2, 3, 3, 3, 1, 3}; //Number of Tibetan font in a certain font encoding //2007 20080924  //20090325
+	int[] EncodingFontNumber = {11, 10, 5, 0, 0, 2, 2, 2, 6, 60, 2, 2, 3, 3, 3, 1, 3}; //Number of Tibetan font in a certain font encoding //2007   20080924  //20090325 // add SambhotaUnicode on 20181201
+
+	public Boolean isTibetan(String fontname) {
+		for(int m =0; m < Encodings; m++) {
+//			System.out.print("font num="+EncodingFontNumber[m]+"\n");
+			for (int n=0; n < EncodingFontNumber[m]; n++) {
+//				System.out.print(TibetanFontNames[m][n]+"\n");
+				if (TibetanFontNames[m][n].equals(fontname)) {
+//					System.out.print("found font\n");
+//					fonti=m;
+//					fontFileID=n;
+					return true;
+//					break compare_font_loop;
+				}
+			}
+		}
+		return false;
+	}
+	public int whichTfont(String fontname) {
+//		compare_font_loop:
+		for(int m =0; m < Encodings; m++) {
+//			System.out.print("font num="+EncodingFontNumber[m]+"\n");
+			for (int n=0; n < EncodingFontNumber[m]; n++) {
+//				System.out.print(TibetanFontNames[m][n]+"\n");
+				if (TibetanFontNames[m][n].equals(fontname)) {
+//					System.out.print("found font\n");
+//					fonti=m;
+//					fontFileID=n;
+					return m;
+//					break compare_font_loop;
+				}
+			}
+		}
+		return 0;
+	}
 
 	public String readRules( String fileName ) throws IOException {
 		String line, segment, rules = "";
@@ -53,18 +417,211 @@ public class ConvertDocx {
 		}
 		ruleFile.close();
 		return rules;
+		
 	}
 
+	
+	public void readTables() throws IOException {
 
-	public String convertText( String text ) {
+//		System.out.print("user.dir"+"\n");
+//		String elements[];
+//		BigInteger integer;
+//		String line;
+//		char ch;
+//		int n;
+
+		for(int i = 1; i < Encodings; i++) {
+			String filename  = System.getProperty("user.dir") + "/" + EncodingFile[i];
+//			System.out.println(System.getProperty("file.encoding"));
+			//Scan long
+//1			Scanner scanner = new Scanner(System.in); 
+			if(i==5||i==6||i==10||i==11||i==13||i==14||i==15) {// for Bzd, Ty or NS, cannot convert now, need sample, load line 12380 in LoadMappingTableOthers2Unicode
+			    System.out.println("Cannot convert Bzd, Ty or NS to unicode, if you provide sample file, I may add them.\n");	
+			}
+			else // For other Encodings such as Fz, Hg, LTibetan, ....
+		    {
+				// wrap a BufferedReader around FileReader
+				BufferedReader bufferedReader = new BufferedReader(new FileReader(filename));
+				
+				// use the readLine method of the BufferedReader to read one line at a time.
+				// the readLine method returns null when there is nothing else to read.
+//				line = bufferedReader.readLine();
+				Table[i] = bufferedReader.readLine().split(" ");
+				
+//				long [][] Table = new long [i][elements.length];
+//				System.out.print("tableSize="+tableSize[i]+"\n");
+				System.out.print(filename+"\n");
+
+				// close the BufferedReader when we're done
+				bufferedReader.close();
+		    }
+		}
+	}
+		
+	
+	public String convertText( String txt , String fnt) {
+		
 		StringBuilder sb = new StringBuilder();
+        int fonti=0;
+        int fontID=0;
+        int l=-1;
+        int val;
+//        int fontFileID;
+	    char [] charArr = new char[4];
+	    char ch;
+	    String out="";
+	    String temp="";
+	    String unicode;
+	    String text;
+	    String font;
+	    String result="";
+
+	    
+	    String unicodes;
+
+	    text=txt;
+	    font=fnt;
+//	    ByteBuffer uni = ByteBuffer.allocate(8);
+
+	    System.out.println("text len="+text.length()+"\n");
 		for(int i = 0; i < text.length(); i++) {
 			int x =  ( 0x00ff & (int)text.charAt(i) );
+			String hex=Integer.toHexString(x);
+			int value = Integer.parseInt(hex, 16);
+//			System.out.print("value="+value+"\n");
+//			System.out.print((int)text.charAt(i)+"\n");
+//			System.out.print(hex+"\n");
+			System.out.print("font="+font+"\n");
+			compare_font_loop:
+			for(int m =0; m < Encodings; m++) {
+//				System.out.print("font num="+EncodingFontNumber[m]+"\n");
+				for (int n=0; n < EncodingFontNumber[m]; n++) {
+//					System.out.print(TibetanFontNames[m][n]+"\n");
+					if (TibetanFontNames[m][n].equals(font)) {
+//						System.out.print("found font\n");
+						fonti=m;
+						fontID=n;
+						break compare_font_loop;
+					}
+				}
+			}
+/*			if(fonti==0||fonti==5||fonti==6||fonti==10||fonti==11||fonti==13||fonti==14||fonti==15) {// for Bzd, Ty or NS, cannot convert now, need sample, load line 12380 in LoadMappingTableOthers2Unicode
+			    System.out.println("Cannot convert Bzd, Ty or NS to unicode, if you provide sample file, I may add them.\n");	
+			    System.exit(0);
+			}
+*/	
+			if(value < 0x21 && value > 0xff) continue;
 			sb.append(  (char)x );
+			System.out.print(sb + "\n");
+//			System.out.print((int)text.charAt(i)+"\n");
+			System.out.print(hex+"\n");
+			System.out.print("Chosen\n");
+//		    "Unicode", ID--0;  "TMW", ID--1; "TM", ID--2; "Fz",ID--3;  "Hg",ID--4;  "ACIP", ID--5
+//"Wylie", ID--6;  "LTibetan", ID--7;  "OldSambhota", ID--8;  "NewSambhota", ID--9;  
+//"THDLWylie", ID--10;  "LCWylie",  ID--11;   "TCRCBodYig",  ID--12; "Bzd", ID--13;
+//"Ty", ID--14; "NS", ID--15; "Jamyang" ID--16 			
+			if(fonti==9 && fontID > 29) { //If NewSambhota
+				fontID = fontID - 30;
+			}else if(fonti==8 && fontID > 2) { // if OldSambhota
+				fontID = fontID - 3;
+				 
+			}
+		    if(fonti==1 || fonti==9) {// If TMW or NewSambhota
+		       l = fontID * 94 + (value - 0x21);
+		    }
+		    else if(fonti == 16) { // If Jamyang
+		    	l = fontID * 223 + (value - 0x21); 
+		    }
+		    else {
+		    	l = fontID * 222 + (value - 0x21);
+		    }			 
+			if(l!=-1) {
+//		       int thepoint=l*30;
+//				System.out.print("thepoint="+thepoint+"\n");
+//			       long thepoint=start[fonti]+l*30;
+//			       int n=0;
+//		    	String[] temp=new String[5];
+//		    	String temp;
+			       System.out.print("l="+l+"\n");
+			       System.out.print("fonti="+fonti+"\n");
+			       unicodes=Table[fonti][l];
+			       System.out.println("len="+unicodes.length()+"\n");
+			       System.out.print("bigInt="+unicodes+"\n");
+			       int n=0;
+			       out="";
+			       temp="";
+			       unicode="";
+			       for (int k=0;k<unicodes.length();k++)
+			        {
+			            ch =  unicodes.charAt(k);
+		            	temp+=ch;
+			            n++;
+			            if(n==4)
+			            {
+			            	unicode="\\u"+temp;
+			            	val = Integer.parseInt(temp);	
+			            	hex = Integer.toHexString(val);
+			            	hex="\\u0"+hex;
+			            	ch = (char) Integer.parseInt( hex.substring(2), 16 );
+			            	System.out.print("hex="+hex+"\n");
+			            	System.out.print("ch="+ch+"\n");
+//			        		Integer code = Integer.parseInt(unicode.substring(2), 16); // the integer 65 in base 10
+//			        		ch = Character.toChars(code)[0]; // the letter 'A'
+			            	out+=ch;
+			                n=0;
+			                temp="";
+			                unicode="";
+			            }
+			        }			       
+	                System.out.println("out="+out+"\n");
+			       }
+//			       temp = bigInt.toByteArray();
+//			       System.out.print("temp len="+temp.length+"\n");
+			       /*			       uni.put(Table[fonti][thepoint]); 
+
+			       charArr[0] = uni.getChar(0);
+			       charArr[1] = uni.getChar(2);
+			       charArr[2] = uni.getChar(4);
+			       charArr[3] = uni.getChar(6);
+
+			       System.out.print(charArr);
+			       System.out.print("\n");
+			       */
+/*		    while(Table[fonti][thepoint] != '\0')
+		    {
+//		    	thepoint++;
+		        temp += char()Table[fonti][thepoint];
+		        thepoint++;
+		        n++;
+		        if(n==4)
+		        {
+		        	temp = "\\u"+temp;
+//		            temp += '\0';
+//		            fputs("\\u",targetFile);
+//		            fputs(temp,targetFile);
+//		            fputs(" ",targetFile); //20100307
+		            n=0;
+		        }
+		        System.out.print(temp+"\n");
+		    }
+			tableBytes[fonti];
+			}
+			}*/
+            System.out.println("out1="+out+"\n");
+            result=result+out;
 		}
-		String step1 = t.transliterate( sb.toString() );
-		String step2 = (step1 == null ) ? null : step1.replaceAll( "፡፡", "።"); // this usually won't work since each hulet neteb is surrounded by separate markup.
-		return step2;
+//		String step1 = t.transliterate( sb.toString() );
+//		String step2 = (step1 == null ) ? null : step1.replaceAll( "፡፡", "።"); // this usually won't work since each hulet neteb is surrounded by separate markup.
+//		return step2;
+		//String s = StringEscapeUtils.unescapeJava(out); // s contains the euro symbol followed by newline
+		//String charInUnicode = "\\u0041"; // ascii code 65, the letter 'A'
+//		ch = (char) code;
+//		String s=Character.toString(ch);
+//		System.out.println(s);
+//	    out="done";
+        System.out.println("out1.5="+result+"\n");
+	    return result;
+//		return ch;
 	}
 
 
@@ -76,7 +633,10 @@ public class ConvertDocx {
 		final String fontName1,
 		final String fontName2) throws Docx4JException
 	{
-				
+			Boolean tibetan=false;	
+			String text;
+			String font;
+			int fonti;
 			ClassFinder finder = new ClassFinder( R.class );
 			new TraversalUtil(part.getContents(), finder);
 		
@@ -92,39 +652,65 @@ public class ConvertDocx {
 					RPr rpr = r.getRPr();
 					if (rpr == null ) continue;
 					RFonts rfonts = rpr.getRFonts();
+					fonti=whichTfont(rfonts.getAscii());
 				
 					if( rfonts == null ) {
-						t = null;
+						tibetan = false;
 					}
+					else if(fonti!=0&&fonti!=5&&fonti!=6&&fonti!=10&&fonti!=11&&fonti!=13&&fonti!=14&&fonti!=15) {// for Bzd, Ty or NS, cannot convert now, need sample, load line 12380 in LoadMappingTableOthers2Unicode
+						tibetan=true;							
+					}
+					/*
+					else if() {
+						rfonts.setAscii( "SambhotaUnicode" );
+						rfonts.setHAnsi( "SambhotaUnicode" );
+						rfonts.setCs( "SambhotaUnicode" );
+						rfonts.setEastAsia( "SambhotaUnicode" );
+						tibetan=true;
+					}*/
 					else if( fontName1.equals( rfonts.getAscii() ) ) {
-						rfonts.setAscii( "Abyssinica SIL" );
+/*						rfonts.setAscii( "Abyssinica SIL" );
 						rfonts.setHAnsi( "Abyssinica SIL" );
 						rfonts.setCs( "Abyssinica SIL" );
 						rfonts.setEastAsia( "Abyssinica SIL" );
-						t = translit1;
+						t = translit1;*/
 					}
 					else if( fontName2.equals( rfonts.getAscii() ) ) {
-						rfonts.setAscii( "Abyssinica SIL" );
+						/*rfonts.setAscii( "Abyssinica SIL" );
 						rfonts.setHAnsi( "Abyssinica SIL" );
 						rfonts.setCs( "Abyssinica SIL" );
 						rfonts.setEastAsia( "Abyssinica SIL" );
-						t = translit2;
+						t = translit2;*/
 					}
 					else {
 						t = null;
+						tibetan=false;
 					}
-
+					t=translit1; //20181215 add for debug
 					List<Object> objects = r.getContent();
 					for ( Object x : objects ) {
 						Object x2 = XmlUtils.unwrap(x);
 						if ( x2 instanceof org.docx4j.wml.Text ) {
-							if ( t != null) {
+							if ( tibetan == true) {
 								Text txt = (org.docx4j.wml.Text)x2;
-								String out = convertText( txt.getValue() );
+//								text=txt.getValue();
+//								font=rfonts.getAscii();
+								String out = convertText( txt.getValue() , rfonts.getAscii());
+//								String out = convertText( text , font);
+								System.out.print("out2="+out+"\n");
 								txt.setValue( out );
 								if ( " ".equals( out ) ) {	
 									txt.setSpace( "preserve" );
 								}
+//								if(tibetan==true) {
+									rfonts.setAscii( "SambhotaUnicode" );
+									rfonts.setHAnsi( "SambhotaUnicode" );
+									rfonts.setCs( "SambhotaUnicode" );
+									rfonts.setEastAsia( "SambhotaUnicode" );
+//									t=translit1;
+									System.out.print("convert one\n");
+//								}
+//								tibetan=false;
 							}
 						}
 						else {
@@ -155,6 +741,7 @@ public class ConvertDocx {
 			// read the input, transliterate, and write to output
 			String table1Text = readRules( table1RulesFile  );
 			String table2Text = readRules( table2RulesFile );
+			readTables();
 
 			final Transliterator translit1 = Transliterator.createFromRules( "Ethiopic-ExtendedLatin", table1Text.replace( '\ufeff', ' ' ), Transliterator.REVERSE );
 			final Transliterator translit2 = Transliterator.createFromRules( "Ethiopic-ExtendedLatin", table2Text.replace( '\ufeff', ' ' ), Transliterator.REVERSE );

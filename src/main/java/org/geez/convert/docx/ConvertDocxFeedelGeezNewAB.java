@@ -130,14 +130,14 @@ public class ConvertDocxFeedelGeezNewAB extends ConvertDocx {
 									lastPrediacritic = false;
 								}
 
-								String out = convertText( txtValue );
+								String out = convertText( txtValue, rfonts.getAscii() );
 								txt.setValue( out );
 								if( " ".equals( out ) ) { // if( Character.isWhitespace( out ) ) {
 									txt.setSpace( "preserve" );
 								}
 								else if( isDiacritic( out ) ) {
 									if( lastTxtValue != null ) {
-										out = convertText( lastTxtValue + txt.getValue() );
+										out = convertText( lastTxtValue + txt.getValue(),rfonts.getAscii() );
 										lastTxt.setValue( out );
 										txt.setValue( "" );
 									}
