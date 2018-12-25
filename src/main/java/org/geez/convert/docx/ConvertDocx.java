@@ -13,17 +13,24 @@ import org.docx4j.TraversalUtil;
 
 import org.docx4j.XmlUtils;
 import org.docx4j.finders.ClassFinder;
+import org.docx4j.jaxb.Context;
 import org.docx4j.openpackaging.exceptions.Docx4JException;
 import org.docx4j.openpackaging.packages.WordprocessingMLPackage;
 import org.docx4j.openpackaging.parts.WordprocessingML.MainDocumentPart;
 import org.docx4j.openpackaging.parts.WordprocessingML.FootnotesPart;
 // import org.docx4j.openpackaging.parts.WordprocessingML.EndnotesPart;
 import org.docx4j.openpackaging.parts.JaxbXmlPart;
+import org.docx4j.wml.PPrBase.Spacing;
+import org.docx4j.openpackaging.parts.WordprocessingML.MainDocumentPart;
+import org.docx4j.wml.PPr;
+import org.docx4j.wml.STLineSpacingRule;
 
-import org.docx4j.wml.R;
-import org.docx4j.wml.RPr;
-import org.docx4j.wml.RFonts;
-import org.docx4j.wml.Text;
+
+//import org.docx4j.wml.R;
+//import org.docx4j.wml.RPr;
+//import org.docx4j.wml.RFonts;
+//import org.docx4j.wml.Text;
+import org.docx4j.wml.*;
 
 //import java.io.BufferedReader;
 //import java.io.File;
@@ -637,21 +644,29 @@ public class ConvertDocx {
 			String text;
 			String font;
 			int fonti;
+			BigInteger bigInt;
+			BigInteger eight = new BigInteger("8");
+			    
 			ClassFinder finder = new ClassFinder( R.class );
 			new TraversalUtil(part.getContents(), finder);
-		
-
 			for (Object o : finder.results) {
 				Object o2 = XmlUtils.unwrap(o);
-						
+			
+//				P  paragraph = ((P)XmlUtils.unwrap(o) );
+			    
+//				PPr paragraphProperties = factory.createPPr();
+//		           wmlP = documentPart.createParagraphOfText(null);				
 				// this is ok, provided the results of the Callback
 				// won't be marshalled			
 			
 				if (o2 instanceof org.docx4j.wml.R) {
 					R r = (org.docx4j.wml.R)o2;
+
 					RPr rpr = r.getRPr();
+					 
 					if (rpr == null ) continue;
 					RFonts rfonts = rpr.getRFonts();
+					HpsMeasure size = rpr.getSz();
 					fonti=whichTfont(rfonts.getAscii());
 				
 					if( rfonts == null ) {
@@ -687,11 +702,14 @@ public class ConvertDocx {
 						tibetan=false;
 					}
 					t=translit1; //20181215 add for debug
+					
 					List<Object> objects = r.getContent();
 					for ( Object x : objects ) {
 						Object x2 = XmlUtils.unwrap(x);
+		                        
 						if ( x2 instanceof org.docx4j.wml.Text ) {
 							if ( tibetan == true) {
+								
 								Text txt = (org.docx4j.wml.Text)x2;
 //								text=txt.getValue();
 //								font=rfonts.getAscii();
@@ -702,6 +720,21 @@ public class ConvertDocx {
 								if ( " ".equals( out ) ) {	
 									txt.setSpace( "preserve" );
 								}
+								if(fonti==9 && size != null) {//NewSambhota font size decrease 4
+//									size.setVal
+									bigInt=size.getVal();
+									System.out.print("fontsize"+bigInt+"\n");
+									size.setVal(bigInt.subtract(eight));
+									
+//									ObjectFactory factory = Context.getWmlObjectFactory();
+//								    Spacing spacing = Context.getWmlObjectFactory().createPPrBaseSpacing();
+//								    documentDefaultPPr.setSpacing(spacing);
+//								    spacing.setBefore(BigInteger.valueOf(300));
+//								    spacing.setAfter(BigInteger.valueOf(300));
+//								    spacing.setLine(BigInteger.valueOf(240));
+//								    System.out.println("spacing="+spacing+"\n");
+								    
+								}
 //								if(tibetan==true) {
 									rfonts.setAscii( "SambhotaUnicode" );
 									rfonts.setHAnsi( "SambhotaUnicode" );
@@ -709,6 +742,19 @@ public class ConvertDocx {
 									rfonts.setEastAsia( "SambhotaUnicode" );
 //									t=translit1;
 									System.out.print("convert one\n");
+//									ObjectFactory factory = (org.docx4j.wml.ObjectFactory) factory;
+									
+//									PPr paragraphProperties = paragraph.getPPr();
+//								    PPr paragraphProperties = factory.createPPr();
+//								    paragraphProperties.getSpacing().setBeforeLines(BigInteger.valueOf(400));
+//								    Spacing sp = factory.createPPrBaseSpacing();
+//								    sp.setAfter(BigInteger.valueOf(200));
+//								    sp.setBefore(BigInteger.valueOf(400));
+//								    sp.setLine(BigInteger.valueOf(482));
+//								    sp.setLineRule(STLineSpacingRule.AUTO);
+//								    paragraphProperties.setSpacing(sp);
+								   
+//								    Style style.setPPr(paragraphProperties);
 //								}
 //								tibetan=false;
 							}
