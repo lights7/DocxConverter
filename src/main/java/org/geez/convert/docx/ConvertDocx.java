@@ -492,7 +492,8 @@ public class ConvertDocx {
 	    System.out.println("text len="+text.length()+"\n");
 		for(int i = 0; i < text.length(); i++) {
 //			int x =  ( 0x00ff & (int)text.charAt(i) );
-			int x =  (int)text.charAt(i) ;
+//			int x =  (int)text.charAt(i) ;
+			int x =  text.charAt(i) ;
 			System.out.print("x="+x+"\n");
     
 			String hex=Integer.toHexString(x);
@@ -500,7 +501,10 @@ public class ConvertDocx {
 			int diff=value-0x21;
 			System.out.print("diff="+diff+"\n");
 //			if(value < 0x21 && value > 0xff) continue;
-		  if(x >= 33 || x <= 255) {
+			out="";
+	     if(x > 0x21 && x <= 0xff) {
+//		  if(x >= 33 || x <= 255) {
+	    	 System.out.print("still entered\n");
 			StringBuilder sb = new StringBuilder();
 			if (value != 0x20) { // value =32, this is an spaceless space
 //				out="";
@@ -641,8 +645,17 @@ public class ConvertDocx {
 			}
 			}*/
 		  }
-		  else {
-            result=result+text.charAt(i);
+		  else if(x == 0x20){
+          	hex="\\u0020"; // this is a space
+          	ch = (char) Integer.parseInt( hex.substring(2), 16 );
+          	out += ch;
+		  }
+  		  else if(x == 0x09){
+            hex="\\u0009"; // this is a space
+            ch = (char) Integer.parseInt( hex.substring(2), 16 );
+            out += ch;
+		  }else {
+            out+=text.charAt(i);
 		  }
             System.out.println("out1="+out+"\n");
             result=result+out;
