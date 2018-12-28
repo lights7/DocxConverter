@@ -391,7 +391,7 @@ public class ConvertDocx {
 		}
 		return false;
 	}
-	public int whichTfont(String fontname) {
+	public int[] whichTfont(String fontname) {
 //		compare_font_loop:
 		for(int m =0; m < Encodings; m++) {
 //			System.out.print("font num="+EncodingFontNumber[m]+"\n");
@@ -400,13 +400,13 @@ public class ConvertDocx {
 				if (TibetanFontNames[m][n].equals(fontname)) {
 //					System.out.print("found font\n");
 //					fonti=m;
-//					fontFileID=n;
-					return m;
+//					fontID=n;
+					return new int[] {m,n};
 //					break compare_font_loop;
 				}
 			}
 		}
-		return 0;
+		return new int[] {0,0};
 	}
 
 	public String readRules( String fileName ) throws IOException {
@@ -465,6 +465,75 @@ public class ConvertDocx {
 		}
 	}
 		
+	public String convertT( int value, int fonti, int fontID) {
+        int l=-1;
+        int val;
+//        int fontFileID;
+	    char [] charArr = new char[4];
+	    char ch;
+	    String out="";
+	    String temp="";
+	    String unicode;
+	    String text;
+	    String font;
+	    String result="";
+	    String unicodes;
+	    String hex;
+
+		if(fonti==9 && fontID > 29) { //If NewSambhota
+			fontID = fontID - 30;
+		}else if(fonti==8 && fontID > 2) { // if OldSambhota
+			fontID = fontID - 3;
+			 
+		}
+	    if(fonti==1 || fonti==9) {// If TMW or NewSambhota
+	       l = fontID * 94 + (value - 0x21);
+			System.out.print("value2="+value+"\n");
+		    System.out.print("l="+l+"\n");
+	    }
+	    else if(fonti == 16) { // If Jamyang
+	    	l = fontID * 223 + (value - 0x21); 
+	    }
+	    else {
+	    	l = fontID * 222 + (value - 0x21);
+	    }			 
+		System.out.print("fontiD="+fontID+"\n");
+
+	       System.out.println("Len="+Table[fonti].length+"\n");
+	       unicodes=Table[fonti][l];
+	       System.out.println("len="+unicodes.length()+"\n");
+	       System.out.print("bigInt="+unicodes+"\n");
+	       int n=0;
+	       out="";
+	       temp="";
+	       unicode="";
+	       for (int k=0;k<unicodes.length();k++)
+	        {
+	            ch =  unicodes.charAt(k);
+         	temp+=ch;
+	            n++;
+	            if(n==4)
+	            {
+	            	unicode="\\u"+temp;
+	            	val = Integer.parseInt(temp);	
+	            	hex = Integer.toHexString(val);
+	            	hex="\\u0"+hex;
+	            	ch = (char) Integer.parseInt( hex.substring(2), 16 );
+//	            	System.out.print("hex="+hex+"\n");
+	            	System.out.print("ch="+ch+"\n");
+//	        		Integer code = Integer.parseInt(unicode.substring(2), 16); // the integer 65 in base 10
+//	        		ch = Character.toChars(code)[0]; // the letter 'A'
+	            	out+=ch;
+	                n=0;
+	                temp="";
+	                unicode="";
+	            }
+	        }			       
+         System.out.println("out="+out+"\n");
+
+		return out;
+	}	
+	
 	
 	public String convertText( String txt , String fnt) {
 		
@@ -684,9 +753,12 @@ public class ConvertDocx {
 		final String fontName2) throws Docx4JException
 	{
 		Boolean tibetan=false;	
+		Boolean font=false;	
 //		String text;
 //		String font;
 		int fonti=0;
+		int fontID=0;
+		int[] fontInfo= {fonti,fontID};
 		BigInteger bigInt;
 		BigInteger eight = new BigInteger("8");
 //		Object p2;
@@ -726,45 +798,24 @@ public class ConvertDocx {
 //						System.out.print("EastAsian="+rpr.getEastAsianLayout().toString()+"\n");
 //						System.out.print("Style="+rpr.getRStyle().getVal()+"\n");
 
-						HpsMeasure size = rpr.getSz();
+					
 						if( rfonts == null ) {
 							tibetan = false;
+							font = false;
 							System.out.println("find null font\n");
+							fonti=0;
+							fontID=0;
 						}
 						else{
-							fonti=whichTfont(rfonts.getAscii());
+							fontInfo=whichTfont(rfonts.getAscii());
+							fonti=fontInfo[0];
+							fontID=fontInfo[1];
 							System.out.print("font="+rfonts.getAscii()+"\n");
-				
+							font = true;
 //							if(fonti!=0&&fonti!=5&&fonti!=6&&fonti!=10&&fonti!=11&&fonti!=13&&fonti!=14&&fonti!=15) {// for Bzd, Ty or NS, cannot convert now, need sample, load line 12380 in LoadMappingTableOthers2Unicode
 							if(fonti==9) {// can only convert NewSambhota to Unicode right now, load line 12380 in LoadMappingTableOthers2Unicode
 								tibetan=true;							
 							}
-						/*
-						else if() {
-							rfonts.setAscii( "SambhotaUnicode" );
-							rfonts.setHAnsi( "SambhotaUnicode" );
-							rfonts.setCs( "SambhotaUnicode" );
-							rfonts.setEastAsia( "SambhotaUnicode" );
-							tibetan=true;
-						}*/
-						/*						else if( fontName1.equals( rfonts.getAscii() ) ) {
-							rfonts.setAscii( "Abyssinica SIL" );
-							rfonts.setHAnsi( "Abyssinica SIL" );
-							rfonts.setCs( "Abyssinica SIL" );
-							rfonts.setEastAsia( "Abyssinica SIL" );
-							t = translit1;
-						}
-						else if( fontName2.equals( rfonts.getAscii() ) ) {
-							/*rfonts.setAscii( "Abyssinica SIL" );
-							rfonts.setHAnsi( "Abyssinica SIL" );
-							rfonts.setCs( "Abyssinica SIL" );
-							rfonts.setEastAsia( "Abyssinica SIL" );
-							t = translit2;
-						}*/
-//						else {
-//							t = null;
-//							tibetan=false;
-//						}
 						}
 						t=translit1; //20181215 add for debug
 					
@@ -772,57 +823,72 @@ public class ConvertDocx {
 						for ( Object x : objects ) {
 							Object x2 = XmlUtils.unwrap(x);
 		                        
-							if ( x2 instanceof org.docx4j.wml.Text ) {
+							if ( x2 instanceof org.docx4j.wml.Text && font == true) {
 //								if ( tibetan == true) {
-								if ( fonti == 9) {
-								
-									Text txt = (org.docx4j.wml.Text)x2;
-//									text=txt.getValue();
-//									font=rfonts.getAscii();
-									System.out.print("txt="+txt.getValue()+"\n");
-									
-									String out = convertText( txt.getValue() , rfonts.getAscii());
+//								if ( fonti == 9) {
+
+								Text txt = (org.docx4j.wml.Text)x2;
+								String text=txt.getValue();
+//								font=rfonts.getAscii();
+								String previousFont=rfonts.getAscii();
+								String currentFont=previousFont;
+								String out = "";
+								String result = "";
+								System.out.print("txt="+txt.getValue()+"\n");
+								for(int i = 0; i < text.length(); i++) {
+//									int x =  ( 0x00ff & (int)text.charAt(i) );
+//									int x =  (int)text.charAt(i) ;
+									int value =  text.charAt(i) ;
+//									System.out.print("x="+x+"\n");
+							    
+									String hex=Integer.toHexString(value);
+//									int value = Integer.parseInt(hex, 16);
+//									int diff=value-0x21;
+//									System.out.print("diff="+diff+"\n");
+//									if(value < 0x21 && value > 0xff) continue;
+//									out="";
+									currentFont=rfonts.getAscii();
+									fontInfo=whichTfont(currentFont);
+									fonti=fontInfo[0];
+									fontID=fontInfo[1];
+									if(value == 0x21) {
+										//this is space
+							          	hex="\\u0020"; // this is a space
+							          	char ch = (char) Integer.parseInt( hex.substring(2), 16 );
+							          	out = String.valueOf(ch);
+										rfonts.setAscii( previousFont );
+										rfonts.setHAnsi( previousFont );
+										rfonts.setCs( previousFont );
+										rfonts.setEastAsia( previousFont );
+									}
+									else if (value == 0x09) {
+										//this is tab
+							          	hex="\\u0009"; // this is a space
+							          	char ch = (char) Integer.parseInt( hex.substring(2), 16 );
+							          	out = String.valueOf(ch);
+										rfonts.setAscii( previousFont );
+										rfonts.setHAnsi( previousFont );
+										rfonts.setCs( previousFont );
+										rfonts.setEastAsia( previousFont );
+//										txt.setValue( out );
+									}
+									else if(fonti==9 && value > 0x21 && value <= 0xff) {
+									//this is NewSambhota T
+										out = convertT(value,fonti,fontID);
+										rfonts.setAscii( "SambhotaUnicode" );
+										rfonts.setHAnsi( "SambhotaUnicode" );
+										rfonts.setCs( "SambhotaUnicode" );
+										rfonts.setEastAsia( "SambhotaUnicode" );
+										System.out.print("convert one\n");
+//										txt.setValue( out );
+
+									}
+//									String out = convertText( txt.getValue() , rfonts.getAscii());
+//									String out = convertText( txt, rfonts.getAscii());
 //									String out = convertText( text , font);
+									
 									System.out.print("out2="+out+"\n");
-									txt.setValue( out );
-									if ( " ".equals( out ) ) {	
-										txt.setSpace( "preserve" );
-									}
-									if(size != null) {//NewSambhota font size decrease 4
-//										size.setVal
-										bigInt=size.getVal();
-										System.out.print("fontsize"+bigInt+"\n");
-										size.setVal(bigInt.subtract(eight));
-									}
-										PPr pPr = p.getPPr();
 
-										if (pPr==null) {
-											System.out.print("no spacing properties\n");
-							                pPr = Context.getWmlObjectFactory().createPPr();
-//											paragraphProperties.getSpacing().setBeforeLines(BigInteger.valueOf(10));
-										}
-										Spacing spacing=pPr.getSpacing();
-										if(spacing==null) {
-									          spacing = Context.getWmlObjectFactory().createPPrBaseSpacing();
-//											  spacing.setLine(BigInteger.valueOf(500));
-											  spacing.setBefore(BigInteger.valueOf(100));
-									          System.out.print("no spacing\n");
-										}
-											//								    paragraphProperties.getSpacing().setLine(BigInteger.valueOf(500));
-//									    Spacing sp = factory.createPPrBaseSpacing();
-									    
-//									    sp.setAfter(BigInteger.valueOf(200));
-//										    sp.setLine(BigInteger.valueOf(5));
-//										    sp.setLine(BigInteger.ZERO);
-//									    sp.setLineRule(STLineSpacingRule.AUTO);
-									    pPr.setSpacing(spacing);
-									    
-										if(rpr.getPosition()==null) {
-											CTSignedHpsMeasure posi=Context.getWmlObjectFactory().createCTSignedHpsMeasure();
-											posi.setVal(BigInteger.valueOf(-6));
-											rpr.setPosition(posi);
-
-										}
 									   
 //									    Style style.setPPr(paragraphProperties);
 									
@@ -833,31 +899,70 @@ public class ConvertDocx {
 //								    	spacing.setAfter(BigInteger.valueOf(300));
 //								    	spacing.setLine(BigInteger.valueOf(240));
 //								    	System.out.println("spacing="+spacing+"\n");
-										rfonts.setAscii( "SambhotaUnicode" );
-										rfonts.setHAnsi( "SambhotaUnicode" );
-										rfonts.setCs( "SambhotaUnicode" );
-										rfonts.setEastAsia( "SambhotaUnicode" );
-										System.out.print("convert one\n");
-								    
+										previousFont=currentFont;
+										result+=out;
+  
+								}
+								if(fonti==9) {
+									txt.setValue( result );
+									if ( " ".equals( out ) ) {	
+										txt.setSpace( "preserve" );
 									}
+									HpsMeasure size = rpr.getSz();
+									if(size != null) {//NewSambhota font size decrease 4
+//										size.setVal
+										bigInt=size.getVal();
+										System.out.print("fontsize"+bigInt+"\n");
+										size.setVal(bigInt.subtract(eight));
+									}
+									PPr pPr = p.getPPr();
+
+									if (pPr==null) {
+										System.out.print("no spacing properties\n");
+						                pPr = Context.getWmlObjectFactory().createPPr();
+//										paragraphProperties.getSpacing().setBeforeLines(BigInteger.valueOf(10));
+									}
+									Spacing spacing=pPr.getSpacing();
+									if(spacing==null) {
+								        spacing = Context.getWmlObjectFactory().createPPrBaseSpacing();
+//										spacing.setLine(BigInteger.valueOf(500));
+										spacing.setBefore(BigInteger.valueOf(100));										          System.out.print("no spacing\n");
+									}
+											//								    paragraphProperties.getSpacing().setLine(BigInteger.valueOf(500));
+//									    Spacing sp = factory.createPPrBaseSpacing();
+									    
+//									    sp.setAfter(BigInteger.valueOf(200));
+//										    sp.setLine(BigInteger.valueOf(5));
+//										    sp.setLine(BigInteger.ZERO);
+//									    sp.setLineRule(STLineSpacingRule.AUTO);
+									pPr.setSpacing(spacing);
+									    
+									if(rpr.getPosition()==null) {
+										CTSignedHpsMeasure posi=Context.getWmlObjectFactory().createCTSignedHpsMeasure();
+										posi.setVal(BigInteger.valueOf(-6));
+										rpr.setPosition(posi);
+									}
+
+								}
+
 //									ObjectFactory factory = (org.docx4j.wml.ObjectFactory) factory;
 									
 //								}
 									tibetan=false;
 									fonti=0;
-								}
+//								}
 							
-							else {
+//							else {
 							// System.err.println( "Found: " + x2.getClass() );
-							}
+//							}
 						}
-					} else {
+//					} else {
 //						System.err.println( XmlUtils.marshaltoString(o, true, true) );
 					}
 				}
 			  }
 			}
-
+		}
 		}
 
 
