@@ -29,9 +29,9 @@ import javafx.stage.Stage;
 public final class DocxConverter extends Application {
  
     private Desktop desktop = Desktop.getDesktop();
-	private static final String brana = "Brana I/II";
-	private static final String geeznewab = "GeezNewA/B";
-	private String system = brana; // alphabetic based default
+	private static final String NewSambhota = "NewSambhota";
+	private static final String Others = "No Others Now";
+	private String system = NewSambhota; // alphabetic based default
 	private boolean openOutput = true;
 	private List<File>  inputList = null;
 	
@@ -49,14 +49,14 @@ public final class DocxConverter extends Application {
     
     @Override
     public void start(final Stage stage) {
-        stage.setTitle("Ethiopic Docx Converter");
-        Image logoImage = new Image( ClassLoader.getSystemResourceAsStream("images/geez-org-avatar.png") );
-        stage.getIcons().add( logoImage );
+        stage.setTitle("NewSambhota Converter");
+//        Image logoImage = new Image( ClassLoader.getSystemResourceAsStream("images/geez-org-avatar.png") );
+//        stage.getIcons().add( logoImage );
 
 
         ComboBox<String> fontMenu = new ComboBox<String>();
-        fontMenu.getItems().addAll( brana, geeznewab );       
-        fontMenu.setValue( "Brana I/II" );
+        fontMenu.getItems().addAll( NewSambhota, Others );       
+        fontMenu.setValue( "NewSambhota" );
         fontMenu.valueProperty().addListener(new ChangeListener<String>() {
             @Override
             public void changed(ObservableValue<? extends String> ov, String oldFont, String newFont) {
@@ -139,20 +139,21 @@ public final class DocxConverter extends Application {
 
     		switch( system ) {
     		
-    		case brana:
+    		case NewSambhota:
     			{
     				ConvertDocx converter = new ConvertDocx();
-    				converter.process( "BranaITable.txt", "BranaIITable.txt", "Brana I", "Brana II", inputFile, outputFile );
+    				converter.convertT( inputFile, outputFile );
+//    				converter.process( "BranaITable.txt", "BranaIITable.txt", "Brana I", "Brana II", inputFile, outputFile );
     			}
     			break;
     			
-    		case geeznewab:
+    	/*	case geeznewab:  // keep for future dev
     			{
     				ConvertDocxFeedelGeezNewAB converter = new ConvertDocxFeedelGeezNewAB();
     				converter.process( "GeezNewATable.txt", "GeezNewBTable.txt", "GeezNewA", "GeezNewB",  inputFile, outputFile );
     			}
     			break;
-    			
+    	*/		
     		default:
     			System.err.println( "Unrecognized input system: " + system );
     			break;

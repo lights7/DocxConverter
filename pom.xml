@@ -32,6 +32,9 @@
 					<archive>
 						<manifest>
 							<mainClass>org.geez.convert.docx.DocxConverter</mainClass>
+                            <addClasspath>true</addClasspath>
+                            <classpathPrefix>./</classpathPrefix>
+                            <classpathLayoutType>repository</classpathLayoutType>
 						</manifest>
 					</archive>
 					<descriptorRefs>
@@ -45,3 +48,4 @@
 	</build>
 
 </project>
+
