@@ -1,5 +1,8 @@
-# Docx Converter for Legacy Ethiopic Font Encoding Systems
+# Docx Converter from Tibetan Ededris Font to Unicode 
 
+## Just download ConvertT.jar and run under any system that has java script installed.
+
+If you are trying to run command line, you can continue to read.
 
 ## About
 
